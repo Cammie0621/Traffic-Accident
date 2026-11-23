@@ -1,6 +1,6 @@
-import altair as alt
 import pandas as pd
 import streamlit as st
+from utils.chart_style import PRIMARY_COLOR
 from utils.filters import SIX_CITIES
 
 
@@ -11,7 +11,7 @@ def render(
     key_prefix: str = "city",
     selected_cities: list[str] | None = None,
 ) -> None:
-    """B 負責的六都事故件數比較長條圖模組。"""
+    """B 負責的六都事故件數比較長條圖模組（使用 st.bar_chart）。"""
     cities = selected_cities if selected_cities is not None else SIX_CITIES
     is_all_six = set(cities) == set(SIX_CITIES)
 
@@ -40,52 +40,40 @@ def render(
     summary = (
         df.groupby("city", as_index=False)["accident_id"]
         .nunique()
-        .rename(columns={"accident_id": "accident_count"})
+        .rename(columns={"accident_id": "事故件數（件）"})
     )
 
-    # 補上「有被勾選但件數為 0」的城市，避免消失
-    base = pd.DataFrame({"city": cities})
+    # 依北到南順序對齊所選城市，補上件數為 0 的城市
+    ordered_cities = [c for c in SIX_CITIES if c in cities]
+    base = pd.DataFrame({"city": ordered_cities})
     summary = base.merge(summary, on="city", how="left")
-    summary["accident_count"] = summary["accident_count"].fillna(0).astype(int)
+    summary["事故件數（件）"] = summary["事故件數（件）"].fillna(0).astype(int)
+    summary = summary.rename(columns={"city": "城市"})
 
-    total_acc = int(summary["accident_count"].sum())
+    total_acc = int(summary["事故件數（件）"].sum())
     st.caption(
         f"統計單位：事故件數（不重複案數）｜"
         f"有效樣本數：{total_acc:,} 件"
     )
 
-    # 決定 Y 軸排序
-    if sort_mode == "依事故件數排序":
-        y_sort = alt.EncodingSortField(field="accident_count", order="descending")
-    else:
-        y_sort = [c for c in SIX_CITIES if c in cities]
-
-    chart = (
-        alt.Chart(summary)
-        .mark_bar(color="#2B6CB0")
-        .encode(
-            x=alt.X(
-                "accident_count:Q",
-                title="事故件數（件）",
-            ),
-            y=alt.Y(
-                "city:N",
-                title="城市",
-                sort=y_sort,
-            ),
-            tooltip=[
-                alt.Tooltip("city:N", title="城市"),
-                alt.Tooltip(
-                    "accident_count:Q",
-                    title="事故件數（件）",
-                    format=",",
-                ),
-            ],
-        )
-        .properties(height=max(220, len(cities) * 45))
+    # "-事故件數（件）" 為由大到小排序，False 為維持資料原本（北到南）順序
+    sort_option = (
+        "-事故件數（件）"
+        if sort_mode == "依事故件數排序"
+        else False
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.bar_chart(
+        summary,
+        x="城市",
+        y="事故件數（件）",
+        x_label="城市",
+        y_label="事故件數（件）",
+        color=PRIMARY_COLOR,
+        horizontal=True,
+        sort=sort_option,
+    )
+
     st.caption(
         "註：圖表呈現原始事故件數，未做人口數或交通量（車流量）校正，"
         "件數較高不代表個人發生事故風險較高。"
