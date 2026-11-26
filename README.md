@@ -44,7 +44,7 @@
 
 - 依來源欄位與順位驗證建立 273,821 個推定案件、618,553 列原始當事者紀錄，其中人的有效年齡 585,193 人次。
 - A 的年齡直方圖可切換 5／10 歲組距、共用車種與全站條件；明示無效年齡、非人紀錄及待覆核值。
-- 提供 360 個整案的固定真實開發樣本；完整 2025 年資料可由前處理腳本重建。
+- 提供 360 個整案的固定真實開發樣本；完整 2025 年資料可由下方 Releases 下載，或由前處理腳本重建。
 - [資料字典](docs/data_dictionary.md)、[清理紀錄](docs/data_quality.md)、[A 部分操作與報告說明](docs/a_report.md)。推定案件 ID 不是官方案件編號。
 - C 的月別圖、D 的時間圖、E 的地圖、F 的肇因圖與箱型圖仍待各自模組交付。
 
@@ -169,9 +169,35 @@ project/
 
 CSV／Parquet 輸出格式依課程與部署需求決定；使用 Parquet 時需在依賴中加入相應讀寫引擎。
 
+## 完整清理資料下載
+
+目前可下載的完整清理資料為 2025 年六都 A1／A2；專題預設範圍仍為 2021–2025 五年，其餘四年待處理。
+
+- [下載 2025 年完整清理資料 ZIP，約 38 MB](https://github.com/Cammie0621/Traffic-Accident/releases/download/data-2025-v1/Traffic-Accident-2025-cleaned-data.zip)
+- [版本說明與檔案校驗](https://github.com/Cammie0621/Traffic-Accident/releases/tag/data-2025-v1)
+
+請下載 Release 的 Assets 中名為 `Traffic-Accident-2025-cleaned-data.zip` 的資料包。GitHub 自動產生的 `Source code` ZIP 僅封存程式與開發小樣本，不包含完整清理資料。
+
+解壓到新資料夾，再將包內的整個 `data/processed` 放入自己的專案，結構如下：
+
+```text
+Traffic-Accident/
+└── data/
+    └── processed/
+        ├── accidents.parquet
+        ├── participants.parquet
+        ├── coverage.parquet
+        ├── metadata.json
+        └── data_quality.json
+```
+
+網站會優先讀取完整資料。全選 2025 年、六都、A1／A2 及全部車種時，應顯示 273,821 件事故與 585,193 筆有效年齡。只有 `data/samples` 時會載入 360 件事故的開發小樣本，不能據此作全年結論。
+
+完整清理資料透過 Releases 發布，`data/processed` 仍由 Git 忽略。一般 clone、pull 或 merge 只取得程式與小樣本，組員須另外下載上述資料包。
+
 ## 本機執行
 
-本版以 Python 3.11 驗證，建議使用此版本建立虛擬環境。未提供完整清理檔時，網站會載入固定開發樣本；正式分析請先取得原始 ZIP 並執行前處理。
+本版以 Python 3.11 驗證，建議使用此版本建立虛擬環境。正式分析可先下載上方資料包；未放置完整清理檔時，網站會載入固定開發樣本。
 
 ```bash
 python -m venv .venv
@@ -189,12 +215,19 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-依資料來源下載 114 年的 ZIP 至 `data/raw/`，保留原始檔名（含 114年或2025），不需先解壓縮。再執行：
+安裝依賴並啟動網站：
 
 ```bash
 python -m pip install -r requirements.txt
-python scripts/preprocess.py --years 2025
 python -m streamlit run app.py
+```
+
+### 從原始資料重建
+
+若需重跑清理流程，依資料來源下載 114 年的 ZIP 至 `data/raw/`，保留原始檔名（含 114年或2025），不需先解壓縮。再執行：
+
+```bash
+python scripts/preprocess.py --years 2025
 ```
 
 若已有本機服務，可直接開啟 http://127.0.0.1:8501/participants 查看 A 的年齡圖。更多參數用 `python scripts/preprocess.py --help`；驗證用 `python -m unittest discover -s tests -v`。補齊五年 ZIP 後執行 `python scripts/preprocess.py --years 2021 2022 2023 2024 2025`，各年度仍須逐一核對品質紀錄。網站公開部署網址：待 B 部署。
