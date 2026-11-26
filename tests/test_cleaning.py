@@ -30,6 +30,13 @@ class CleaningTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"Source year does not match"):
             build_tables(pd.DataFrame([row(1)]),"2024/fixture.csv",2024)
 
+    def test_cross_year_light_truck_names_share_category_and_keep_raw(self):
+        for year,raw_type in [(2024,"小貨車(含客、貨兩用)"),(2025,"小貨車")]:
+            record=row(1,**{"發生年度":str(year),"發生日期":f"{year}0101","當事者區分-類別-大類別名稱-車種":raw_type})
+            _,part,_=build_tables(pd.DataFrame([record]),f"{year}/fixture.csv",year)
+            self.assertEqual(part.vehicle_type.iloc[0],"小貨車")
+            self.assertEqual(part.vehicle_type_raw.iloc[0],raw_type)
+
     def test_casualties_once_and_leading_zero_time(self):
         acc, part, _ = build_tables(pd.DataFrame([row(1), row(2)]), "fixture.csv", 2025)
         self.assertEqual((len(acc), len(part), int(acc.deaths.sum())), (1, 2, 1))

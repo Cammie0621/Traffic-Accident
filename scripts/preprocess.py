@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 from utils.cleaning import AGE_REASONS, RAW_COLUMNS, SIX_CITIES, build_tables, regions
 
 SOURCE_PAGES = {2021:158865, 2022:161199, 2023:167905, 2024:172969, 2025:177136}
-VERSION = "annual-a-v2"
+VERSION = "annual-a-v3"
 
 
 def dump_json(path, data):

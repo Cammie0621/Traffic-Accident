@@ -47,7 +47,7 @@ def clean_age(age_raw: pd.Series, sex_raw: pd.Series) -> pd.DataFrame:
 def vehicle_types(frame: pd.DataFrame, is_person: pd.Series) -> pd.Series:
     major = text(frame["當事者區分-類別-大類別名稱-車種"])
     minor = text(frame["當事者區分-類別-子類別名稱-車種"])
-    result = major.replace({"小客車(含客、貨兩用)": "小客車", "": "未知／未填"})
+    result = major.replace({"小客車(含客、貨兩用)": "小客車", "小貨車(含客、貨兩用)": "小貨車", "": "未知／未填"})
     people = major.eq("人")
     result.loc[people] = minor.loc[people].replace({"": "其他人"})
     # Preserve an unmanned vehicle's actual type for accident-involvement

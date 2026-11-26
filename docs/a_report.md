@@ -48,7 +48,7 @@ flowchart LR
 
 ## 操作與交接
 
-先從 [2024–2025 年資料 Release](https://github.com/Cammie0621/Traffic-Accident/releases/tag/data-2024-2025-v1) 下載完整清理資料並放入 data/processed，再啟動網站、選 participants 頁面。使用側邊年度、城市、事故類別，以及同頁車種控制；切換 5／10 歲組距，觀察年齡圖與有效筆數。待覆核值選項可比較 0 歲與高齡原值的影響。空選會顯示提示。
+先從 [2024–2025 年資料 Release](https://github.com/Cammie0621/Traffic-Accident/releases/tag/data-2024-2025-v2) 下載完整清理資料並放入 data/processed，再啟動網站、選 participants 頁面。使用側邊年度、城市、事故類別，以及同頁車種控制；切換 5／10 歲組距，觀察年齡圖與有效筆數。待覆核值選項可比較 0 歲與高齡原值的影響。空選會顯示提示。
 
 前處理入口是 scripts/preprocess.py；共用規則位於 utils/cleaning.py；年齡圖位於 components/age_distribution.py；頁面組裝位於 pages/4_participants.py。欄位與品質規則分別見 [資料字典](data_dictionary.md)及[清理紀錄](data_quality.md)。
 

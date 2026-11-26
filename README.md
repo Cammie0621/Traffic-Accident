@@ -173,8 +173,8 @@ CSV／Parquet 輸出格式依課程與部署需求決定；使用 Parquet 時需
 
 目前可下載的完整清理資料為 2024–2025 年六都 A1／A2；專題預設範圍仍為 2021–2025 五年，其餘 2021–2023 三年待處理。
 
-- [下載 2024–2025 年完整清理資料 ZIP，約 73 MB](https://github.com/Cammie0621/Traffic-Accident/releases/download/data-2024-2025-v1/Traffic-Accident-2024-2025-cleaned-data.zip)
-- [版本說明與檔案校驗](https://github.com/Cammie0621/Traffic-Accident/releases/tag/data-2024-2025-v1)
+- [下載 2024–2025 年完整清理資料 ZIP，約 73 MB](https://github.com/Cammie0621/Traffic-Accident/releases/download/data-2024-2025-v2/Traffic-Accident-2024-2025-cleaned-data.zip)
+- [版本說明與檔案校驗](https://github.com/Cammie0621/Traffic-Accident/releases/tag/data-2024-2025-v2)
 
 請下載 Release 的 Assets 中名為 `Traffic-Accident-2024-2025-cleaned-data.zip` 的資料包。GitHub 自動產生的 `Source code` ZIP 僅封存程式與開發小樣本，不包含完整清理資料。
 
