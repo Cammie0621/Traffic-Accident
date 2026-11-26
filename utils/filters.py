@@ -49,13 +49,11 @@ def render_sidebar_filters(
     all_years = sorted(accidents["year"].dropna().unique().tolist())
     _init_state(all_years)
 
-    # 切頁時將共用狀態同步回側邊欄元件
-    if "sb_years" not in st.session_state:
-        st.session_state["sb_years"] = st.session_state["global_years"]
-    if "sb_cities" not in st.session_state:
-        st.session_state["sb_cities"] = st.session_state["global_cities"]
-    if "sb_types" not in st.session_state:
-        st.session_state["sb_types"] = st.session_state["global_types"]
+    # 不同頁面的 widget 身分不同，需在建立元件前由共用狀態還原。
+    # 同頁操作會先透過 on_change 更新 global_*，因此不會覆蓋新選擇。
+    st.session_state["sb_years"] = st.session_state["global_years"].copy()
+    st.session_state["sb_cities"] = st.session_state["global_cities"].copy()
+    st.session_state["sb_types"] = st.session_state["global_types"].copy()
 
     with st.sidebar:
         st.header("共用篩選條件")

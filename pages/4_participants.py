@@ -15,12 +15,19 @@ st.write(f"目前條件：年度 {info['years']}｜縣市 {len(info['cities'])} 
 
 all_vehicles = sorted(participants["vehicle_type"].dropna().unique().tolist())
 previous_options = st.session_state.get("participants_vehicle_options")
+previous_selection = st.session_state.get(
+    "participants_selected_vehicles",
+    st.session_state.get("participants_vehicles", all_vehicles),
+)
 if previous_options != all_vehicles:
-    previous_selection = st.session_state.get("participants_vehicles", all_vehicles)
     selection = all_vehicles if previous_options is None or set(previous_selection) == set(previous_options) else [value for value in previous_selection if value in all_vehicles]
-    st.session_state["participants_vehicles"] = selection
+    st.session_state["participants_vehicles"] = selection.copy()
     st.session_state["participants_vehicle_options"] = all_vehicles
+elif "participants_vehicles" not in st.session_state:
+    st.session_state["participants_vehicles"] = previous_selection.copy()
 selected_vehicles = st.multiselect("車種篩選（A 與 F 圖表共用）", options=all_vehicles, key="participants_vehicles")
+# 另存非 widget 狀態，避免切頁清除元件狀態後遺失車種選擇。
+st.session_state["participants_selected_vehicles"] = selected_vehicles.copy()
 vehicle_part = filtered_part.loc[filtered_part["vehicle_type"].isin(selected_vehicles)].copy()
 involved_ids = vehicle_part["accident_id"].unique()
 vehicle_acc = filtered_acc.loc[filtered_acc["accident_id"].isin(involved_ids)].copy()
