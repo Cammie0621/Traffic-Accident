@@ -1,7 +1,10 @@
+from pathlib import Path
 from zipfile import ZipFile
 import pandas as pd
 
-zip_path = r"E:\Traffic-Accident\data\raw\114年傷亡道路交通事故資料.zip"
+# 依腳本位置取得專案根目錄，讓不同電腦與執行目錄都使用相同資料位置。
+ROOT = Path(__file__).resolve().parents[1]
+zip_path = ROOT / "data" / "raw" / "114年傷亡道路交通事故資料.zip"
 
 # 直接讀取壓縮檔內的 A1 CSV
 with ZipFile(zip_path, metadata_encoding="cp950") as archive:
