@@ -1,12 +1,12 @@
 # 六都事故資料字典
 
-本版處理 2025 年六都 A1／A2 傷亡事故。事故表每案一列；當事者表每筆來源當事者紀錄一列，包含需要另外辨識的非人紀錄。兩表使用衍生 accident_id 連接。
+本版處理 2024–2025 年六都 A1／A2 傷亡事故，欄位介面沿用既有規格。事故表每案一列；當事者表每筆來源當事者紀錄一列，包含需要另外辨識的非人紀錄。兩表使用衍生 accident_id 連接。
 
-資料來源為[政府資料開放平臺 114 年傷亡道路交通事故資料](https://data.gov.tw/dataset/177136)。程式採用來源 52 欄中的 19 欄，並保留來源檔案、紀錄序號及清理旗標。原始 ZIP 與 CSV 不改寫。
+資料來源為[113 年資料](https://data.gov.tw/dataset/172969)與[114 年資料](https://data.gov.tw/dataset/177136)。2024 年原始 CSV 有 51 欄，2025 年有 52 欄；兩年均具備程式採用的 19 個必要欄位。2025 年多出的共享經濟／外送平台欄位不影響目前圖表。保留來源檔案、紀錄序號及清理旗標，原始 ZIP 與 CSV 不改寫。
 
 ## 事故表
 
-檔案為 data/processed/accidents.parquet，共 273,821 列。accident_id 唯一。傷亡、事故數、時間、地圖及主要肇因以這張表為基礎。
+檔案為 data/processed/accidents.parquet，共 542,483 列（2024 年 268,662 列、2025 年 273,821 列）。accident_id 唯一。傷亡、事故數、時間、地圖及主要肇因以這張表為基礎。
 
 | 欄位 | 儲存型別 | 定義 |
 | --- | --- | --- |
@@ -46,7 +46,7 @@
 
 ## 當事者紀錄表
 
-檔案為 data/processed/participants.parquet，共 618,553 列。participant_id 唯一；accident_id 對應事故表。計算人的紀錄人次時須篩 is_person；年齡分析再篩 age_valid。
+檔案為 data/processed/participants.parquet，共 1,225,376 列（2024 年 606,823 列、2025 年 618,553 列）。participant_id 唯一；accident_id 對應事故表。計算人的紀錄人次時須篩 is_person；年齡分析再篩 age_valid。
 
 | 欄位 | 儲存型別 | 定義 |
 | --- | --- | --- |

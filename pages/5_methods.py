@@ -8,7 +8,12 @@ st.subheader("資料來源與處理方法")
 if is_sample:
     st.warning("目前使用開發樣本；本頁筆數不代表全年資料。")
 st.write(f"目前載入年度：{metadata.get('years', sorted(accidents['year'].unique().tolist()))}")
-st.markdown("資料來源：[政府資料開放平臺 114 年傷亡道路交通事故資料](https://data.gov.tw/dataset/177136)。其他年度依專案規劃逐步擴充。")
+sources = metadata.get("sources", [])
+if sources:
+    source_links = [f"[{source['year']} 年傷亡道路交通事故資料]({source['source_page']})" for source in sources]
+    st.markdown("資料來源：" + "、".join(source_links) + "。")
+else:
+    st.caption("資料來源與實際涵蓋年度請見專案 README。")
 st.write("原始資料按當事者記錄，同一案件的全案傷亡會重複出現。前處理產生每案一列的事故表，以及保留原始當事者紀錄的當事者表，使用衍生事故 ID 連接。")
 st.write("衍生事故 ID 使用日期、時間、地點、經緯度、警局與事故類別，並驗證來源順位重新起始及同案欄位一致性。它不是官方案件編號，同時同地的不同事故會保留為不同來源案件組。")
 st.write("當事者表保留『無或物』及無人駕駛紀錄，以 is_person 標記。年齡圖使用人的有效年齡紀錄；負值、未查獲、不合法數值與非人紀錄均保留清理原因。0 歲不自動視為缺值。")

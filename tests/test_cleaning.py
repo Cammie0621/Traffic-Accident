@@ -17,6 +17,19 @@ def row(order=1, age="25", sex="男", **changes):
 
 
 class CleaningTests(unittest.TestCase):
+    def test_2024_leap_day_and_midnight(self):
+        record=row(1, **{"發生年度":"2024", "發生月份":"2", "發生日期":"20240229", "發生時間":"000000"})
+        acc,part,_=build_tables(pd.DataFrame([record]),"2024/fixture.csv",2024)
+        self.assertEqual(int(acc.year.iloc[0]),2024)
+        self.assertEqual(str(acc.date.iloc[0].date()),"2024-02-29")
+        self.assertEqual((int(acc.weekday.iloc[0]),int(acc.hour.iloc[0])),(3,0))
+        self.assertTrue(bool(acc.datetime_valid.iloc[0]))
+        self.assertTrue(str(part.accident_id.iloc[0]).startswith("2024-"))
+
+    def test_source_year_mismatch_is_rejected(self):
+        with self.assertRaisesRegex(ValueError,"Source year does not match"):
+            build_tables(pd.DataFrame([row(1)]),"2024/fixture.csv",2024)
+
     def test_casualties_once_and_leading_zero_time(self):
         acc, part, _ = build_tables(pd.DataFrame([row(1), row(2)]), "fixture.csv", 2025)
         self.assertEqual((len(acc), len(part), int(acc.deaths.sum())), (1, 2, 1))
