@@ -84,10 +84,11 @@ def render_sidebar_filters(
         )
 
         st.button(
-            "重設篩選",
+            "重設共用篩選",
             on_click=_reset_filters,
             args=(all_years,),
             use_container_width=True,
+            help="將年度、縣市與事故類別恢復全選；保留車種及各圖表的局部設定。",
         )
 
     # 1. 先篩選事故表

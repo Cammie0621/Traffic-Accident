@@ -28,3 +28,9 @@ load_data() 保持原本回傳 `(accidents, participants, is_sample)`；完整�
 參數與回傳欄位以 [資料字典](data_dictionary.md)為準，清理口徑見 [清理紀錄](data_quality.md)。F 的箱型圖請共用 age_valid 及 age_review_required，避免另訂年齡規則；E 的地圖請只繪製 coordinate_valid，並列出無座標件數；C 的每日平均分母請使用 coverage 的涵蓋日曆；D 的有效星期與時段需核對 date_valid 及 time_valid。
 
 測試指令為 `python -m unittest discover -s tests -v`，不需額外測試套件。操作及報告講解見 [A 部分說明](a_report.md)。
+
+## 3. 圖表設定的跨頁保存
+
+年度、縣市、事故類別與車種會在同一次使用中保留；年齡組距、排除待覆核值及城市排序也會在切頁返回後還原，無資料而暫時隱藏排序元件時同樣保留。側邊欄「重設共用篩選」只將年度、縣市與事故類別恢復全選，不清除各頁的局部設定。
+
+新增有固定選項的局部控制項時，可使用 `utils/widget_state.py` 的 `restore_widget_state(key, default)` 在建立元件前還原狀態，並設定 `on_change=save_widget_state, args=(key,)` 保存最新選擇。各模組仍須使用獨立的 `key_prefix`。此機制使用 `st.session_state`，保存範圍為同一工作階段，不提供重開瀏覽器後的永久記憶。

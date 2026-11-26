@@ -25,6 +25,7 @@ class ParticipantsPageTests(unittest.TestCase):
             "vehicle_type": ["機車", "小客車", "小客車", "機車"],
             "age": [25, 40, 35, 60],
         })
+        self.participants = participants
         loader = patch("utils.data_loader.load_data", return_value=(accidents, participants, True))
         loader.start()
         self.addCleanup(loader.stop)
@@ -76,6 +77,82 @@ class ParticipantsPageTests(unittest.TestCase):
         self.assertEqual(len(app.multiselect(key="sb_cities").value), 6)
         self.assertEqual(app.multiselect(key="sb_types").value, ["A1", "A2"])
         self.assertEqual(app.metric[0].value, "2 人次")
+
+    def test_age_controls_and_counts_survive_page_roundtrip(self):
+        # 0 與 100 歲預設有效，但勾選排除待覆核值後應由 4 人次降為 2 人次。
+        self.participants["age"] = [0, 40, 100, 60]
+        app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=15).run()
+        app.switch_page("pages/4_participants.py").run()
+        self.assertEqual(app.radio(key="participants_age_bin_width").value, 5)
+        self.assertFalse(app.checkbox(key="participants_age_exclude_review").value)
+        # 同一工作階段依序更改兩組設定，亦驗證取消勾選會覆蓋先前保存的 True。
+        for width, exclude_review in [(10, True), (5, False)]:
+            with self.subTest(width=width, exclude_review=exclude_review):
+                app.radio(key="participants_age_bin_width").set_value(width).run()
+                app.checkbox(key="participants_age_exclude_review").set_value(exclude_review).run()
+                expected_count = "2 人次" if exclude_review else "4 人次"
+                self.assertEqual(app.metric[0].value, expected_count)
+
+                for page in ["pages/1_overview.py", "pages/5_methods.py", "app.py"]:
+                    app.switch_page(page).run()
+                    self.assertEqual(list(app.exception), [])
+                app.switch_page("pages/4_participants.py").run()
+
+                self.assertEqual(list(app.exception), [])
+                self.assertEqual(app.radio(key="participants_age_bin_width").value, width)
+                self.assertEqual(app.checkbox(key="participants_age_exclude_review").value, exclude_review)
+                self.assertEqual(app.metric[0].value, expected_count)
+
+    def test_age_controls_survive_empty_results_and_reset(self):
+        self.participants["age"] = [0, 40, 100, 60]
+        app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=15).run()
+        app.switch_page("pages/4_participants.py").run()
+        app.radio(key="participants_age_bin_width").set_value(10).run()
+        app.checkbox(key="participants_age_exclude_review").check().run()
+        app.multiselect(key="sb_years").set_value([]).run()
+        self.assertEqual(app.metric[0].value, "0 人次")
+        app.switch_page("pages/1_overview.py").run()
+        app.switch_page("pages/4_participants.py").run()
+        self.assertEqual(app.multiselect(key="sb_years").value, [])
+        app.button[0].click().run()
+
+        self.assertEqual(list(app.exception), [])
+        self.assertEqual(app.radio(key="participants_age_bin_width").value, 10)
+        self.assertTrue(app.checkbox(key="participants_age_exclude_review").value)
+        self.assertEqual(app.metric[0].value, "2 人次")
+
+    def test_city_sort_survives_page_roundtrip(self):
+        app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=15).run()
+        app.switch_page("pages/1_overview.py").run()
+        fixed_order = "固定城市順序（北到南）"
+        app.radio(key="overview_city_sort").set_value(fixed_order).run()
+        app.switch_page("pages/4_participants.py").run()
+        app.switch_page("pages/1_overview.py").run()
+
+        self.assertEqual(list(app.exception), [])
+        self.assertEqual(app.radio(key="overview_city_sort").value, fixed_order)
+
+        # 再改回另一選項，確認保存的是最新選擇。
+        count_order = "依事故件數排序"
+        app.radio(key="overview_city_sort").set_value(count_order).run()
+        app.switch_page("pages/2_time.py").run()
+        app.switch_page("pages/1_overview.py").run()
+        self.assertEqual(list(app.exception), [])
+        self.assertEqual(app.radio(key="overview_city_sort").value, count_order)
+
+    def test_city_sort_survives_hidden_widget_and_reset(self):
+        app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=15).run()
+        app.switch_page("pages/1_overview.py").run()
+        fixed_order = "固定城市順序（北到南）"
+        app.radio(key="overview_city_sort").set_value(fixed_order).run()
+        app.multiselect(key="sb_years").set_value([]).run()
+        self.assertEqual(len(app.radio), 0)
+        self.assertEqual(list(app.exception), [])
+
+        app.button[0].click().run()
+
+        self.assertEqual(list(app.exception), [])
+        self.assertEqual(app.radio(key="overview_city_sort").value, fixed_order)
 
 
 if __name__ == "__main__":

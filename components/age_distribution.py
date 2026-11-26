@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 from utils.chart_style import PRIMARY_COLOR
 from utils.cleaning import AGE_REASONS
+from utils.widget_state import restore_widget_state, save_widget_state
 
 
 def summarize_ages(participants: pd.DataFrame, bin_width: int, exclude_review: bool = False):
@@ -34,11 +35,24 @@ def summarize_ages(participants: pd.DataFrame, bin_width: int, exclude_review: b
 
 def render(accidents: pd.DataFrame, participants: pd.DataFrame, *, key_prefix: str = "age") -> None:
     st.subheader("當事者年齡分布")
+    width_key = f"{key_prefix}_bin_width"
+    review_key = f"{key_prefix}_exclude_review"
+    restore_widget_state(width_key, 5)
+    restore_widget_state(review_key, False)
     left, right = st.columns([1, 2])
     with left:
-        width = st.radio("年齡組距", [5, 10], format_func=lambda value: f"{value} 歲一組", horizontal=True, key=f"{key_prefix}_bin_width")
+        width = st.radio(
+            "年齡組距", [5, 10],
+            format_func=lambda value: f"{value} 歲一組",
+            horizontal=True, key=width_key,
+            on_change=save_widget_state, args=(width_key,),
+        )
     with right:
-        exclude_review = st.checkbox("排除待覆核年齡（0 歲及 100 歲以上）", value=False, key=f"{key_prefix}_exclude_review", help="預設保留符合分析範圍的原始年齡。此選項用於比較待覆核值是否影響分布；0 歲不自動視為缺值。")
+        exclude_review = st.checkbox(
+            "排除待覆核年齡（0 歲及 100 歲以上）", key=review_key,
+            help="預設保留符合分析範圍的原始年齡。此選項用於比較待覆核值是否影響分布；0 歲不自動視為缺值。",
+            on_change=save_widget_state, args=(review_key,),
+        )
     histogram, counts = summarize_ages(participants, width, exclude_review)
     first, second, third = st.columns(3)
     first.metric("可分析年齡", f"{counts['valid_age_records']:,} 人次")
