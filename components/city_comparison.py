@@ -38,7 +38,7 @@ def render(
     # 使用副本彙整：依城市計算不重複事故件數
     df = accidents.copy()
     summary = (
-        df.groupby("city", as_index=False)["accident_id"]
+        df.groupby("city", as_index=False, observed=True)["accident_id"]
         .nunique()
         .rename(columns={"accident_id": "事故件數（件）"})
     )

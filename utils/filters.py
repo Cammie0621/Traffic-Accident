@@ -20,6 +20,15 @@ def _init_state(all_years: list[int]) -> None:
         st.session_state["global_cities"] = SIX_CITIES.copy()
     if "global_types" not in st.session_state:
         st.session_state["global_types"] = ACCIDENT_TYPES.copy()
+    available = tuple(all_years)
+    if st.session_state.get("_available_years") != available:
+        for key in ("global_years", "sb_years"):
+            if key in st.session_state:
+                previous = st.session_state[key]
+                selected = [year for year in previous if year in all_years]
+                st.session_state[key] = selected if selected or not previous else all_years.copy()
+        st.session_state["_available_years"] = available
+
 
 
 def _reset_filters(all_years: list[int]) -> None:

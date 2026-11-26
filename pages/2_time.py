@@ -10,7 +10,7 @@ filtered_acc, filtered_part, info = render_sidebar_filters(
 )
 
 if is_sample:
-    st.caption("目前使用開發用模擬小樣本（待 A 提供正式資料後自動切換）。")
+    st.caption("目前使用開發小樣本，僅供操作測試；不代表全年資料。")
 
 st.write(
     f"目前條件：年度 {info['years']}｜"
@@ -18,5 +18,5 @@ st.write(
 )
 st.write(
     f"篩選後：事故 **{len(filtered_acc)}** 件、"
-    f"當事者 **{len(filtered_part)}** 人次"
+    f"當事者原始紀錄 **{len(filtered_part)}** 筆"
 )
