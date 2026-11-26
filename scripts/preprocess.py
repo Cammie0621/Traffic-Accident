@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 from utils.cleaning import AGE_REASONS, RAW_COLUMNS, SIX_CITIES, build_tables, regions
 
 SOURCE_PAGES = {2021:158865, 2022:161199, 2023:167905, 2024:172969, 2025:177136}
-VERSION = "annual-a-v3"
+VERSION = "annual-a-v4"
 
 
 def dump_json(path, data):
@@ -111,11 +111,14 @@ def run(args):
                     continue
                 source_name = f"{year}/{member.filename}"
                 acc, part, audit = build_tables(selected, source_name, year)
-                accidents_parts.append(acc)
-                participant_parts.append(part)
+                # Compact each complete source file before retaining it, so
+                # five-year processing does not retain all raw Python strings.
+                accidents_parts.append(compact(acc))
+                participant_parts.append(compact(part))
                 audits.append(audit)
                 year_manifest["members"].append({"name":member.filename, "uncompressed_bytes":member.file_size, **dict(counts), "selected_records":len(part), "accidents":len(acc)})
                 print(f"{source_name}: {len(acc):,} cases; {len(part):,} source party records", flush=True)
+                del selected, selected_parts, chunk, acc, part
         manifests.append(year_manifest)
         for month, observed in month_dates.items():
             days = calendar.monthrange(year, month)[1]
@@ -134,7 +137,7 @@ def run(args):
         raise ValueError("Participant record reconciliation failed")
     if len(accidents) != sum(a["source_rank_one"] for a in audits):
         raise ValueError("Case/source ordinal reconciliation failed")
-    metadata = {"pipeline_version":VERSION, "generated_at_utc":datetime.now(timezone.utc).isoformat(), "is_sample":False, "years":sorted(set(args.years)), "cities":SIX_CITIES, "accident_count":len(accidents), "participant_records":len(participants), "person_records":int(participants["is_person"].sum()), "non_person_records":int((~participants["is_person"]).sum()), "valid_age_records":int(participants["age_valid"].sum()), "deaths":int(accidents["deaths"].sum()), "injuries":int(accidents["injuries"].sum()), "date_start":str(accidents["date"].min().date()), "date_end":str(accidents["date"].max().date()), "coverage":coverage, "sources":manifests, "case_id_method":"derived composite key plus validated source ordinal reset; not official case ID", "age_rule":"identified person, integer 0..120; raw retained; zero and age>=100 flagged for review; unidentified hit-and-run excluded from age analysis"}
+    metadata = {"pipeline_version":VERSION, "generated_at_utc":datetime.now(timezone.utc).isoformat(), "is_sample":False, "years":sorted(set(args.years)), "cities":SIX_CITIES, "accident_count":len(accidents), "participant_records":len(participants), "person_records":int(participants["is_person"].sum()), "non_person_records":int((~participants["is_person"]).sum()), "valid_age_records":int(participants["age_valid"].sum()), "deaths":int(accidents["deaths"].sum()), "injuries":int(accidents["injuries"].sum()), "date_start":str(accidents["date"].min().date()), "date_end":str(accidents["date"].max().date()), "coverage":coverage, "sources":manifests, "case_id_method":"derived composite key; a unique ordinal-1 key is independent of row order, repeated keys use validated source resets; not official case ID", "age_rule":"identified person, integer 0..120; raw retained; zero and age>=100 flagged for review; unidentified hit-and-run excluded from age analysis"}
     quality = {"pipeline_version":VERSION, "source_totals":dict(totals), "age_reason_counts":{str(k):int(v) for k,v in participants["age_invalid_reason"].value_counts().items()}, "age_reason_labels":AGE_REASONS, "age_review_records":int(participants["age_review_required"].sum()), "same_key_split_groups":sum(a["same_key_split_groups"] for a in audits), "ordinal_repeated_rows":int(participants["ordinal_repeated"].sum()), "invalid_coordinate_cases":int((~accidents["coordinate_valid"]).sum()), "invalid_date_cases":int((~accidents["date_valid"]).sum()), "invalid_time_cases":int((~accidents["time_valid"]).sum()), "per_source":audits, "checks":{"unique_accident_id":True,"unique_participant_id":True,"all_participants_linked":True,"source_records_reconciled":True,"case_boundaries_shared_fields_consistent":True,"casualties_counted_once_per_case":True}}
     accidents = compact(accidents)
     participants = compact(participants)
@@ -152,7 +155,7 @@ def run(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--years", nargs="+", type=int, choices=sorted(SOURCE_PAGES), default=[2025])
+    parser.add_argument("--years", nargs="+", type=int, choices=sorted(SOURCE_PAGES), default=sorted(SOURCE_PAGES))
     parser.add_argument("--raw-dir", type=Path, default=ROOT/"data"/"raw")
     parser.add_argument("--output-dir", type=Path, default=ROOT/"data"/"processed")
     parser.add_argument("--sample-dir", type=Path, default=ROOT/"data"/"samples")

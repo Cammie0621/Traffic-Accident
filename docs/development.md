@@ -13,11 +13,13 @@ python -m streamlit run app.py
 
 ## 2. A 部分資料交接
 
-專題預設分析範圍為 2021–2025 五年，依 2025、2024、2023、2022、2021 的順序完成各年度資料清理、驗證與整合。目前已完成並驗證 2024、2025 年。
+本版已完成 2021–2025 五年六都資料清理與 A 的年齡圖整合。使用 Python 3.11；組員可從 [五年資料 Release](https://github.com/Cammie0621/Traffic-Accident/releases/tag/data-2021-2025-v1) 下載完整資料，將包內整個 data/processed 放入專案即可開發。
 
-本版以 Python 3.11 驗證。可從 [2024–2025 年資料 Release](https://github.com/Cammie0621/Traffic-Accident/releases/tag/data-2024-2025-v2) 下載完整清理資料，將包內整個 data/processed 放入專案即可開發。若需重建，將 2024、2025 年 ZIP 放在 data/raw，檔名需包含 113年或2024、114年或2025；執行 `python scripts/preprocess.py --years 2024 2025`。原始檔不解壓、不改寫，讀取必要欄位並分批處理。補齊 110–114 年的五份年度 ZIP 後，執行 `python scripts/preprocess.py --years 2021 2022 2023 2024 2025`，各年度皆須核對品質紀錄。
+若需重建，將 110–114 年五份年度 ZIP 放在 data/raw，執行 `python scripts/preprocess.py --years 2021 2022 2023 2024 2025`；省略 --years 也預設五年。原始檔不需解壓、不改寫，每個完整來源檔清理後先壓縮記憶體中的字串型別，再整合五年，以控制大型資料的記憶體需求。指定單年時，建議另指定 --output-dir 與 --sample-dir 保留正式五年輸出。
 
-完整表及 metadata.json、data_quality.json、coverage.parquet 保存在 data/processed，此目錄不提交 Git。兩年共 542,483 件推定事故、1,225,376 筆來源當事者紀錄，開發樣本保留 720 個整案。data/samples 是固定且保留整案的真實小樣本，可以供組員開發；不可當作正式全年數據。
+完整表、metadata.json、data_quality.json 與 coverage.parquet 保存在 data/processed，此目錄不提交 Git。五年共 1,309,477 件推定事故、2,953,984 筆來源當事者紀錄。data/samples 保留 1,800 個整案、4,355 筆來源紀錄，可供開發，不作正式分析。
+
+案件識別會先核對每個候選鍵的順位 1 筆數；僅一筆時不要求來源列依順位排列，同鍵多案才使用經驗證的來源重啟順序。缺少順位 1、同案欄位衝突或多案邊界有歧義時停止，不補造當事者。此規則處理 2021 年 A1 的亂序列，仍保留事故表與當事者表的原介面。
 
 load_data() 保持原本回傳 `(accidents, participants, is_sample)`；完整資料優先，其次真實開發樣本，最後舊模擬樣本。快取包含兩表與中繼檔的更新時間及大小，重跑後會更新。年份條件若仍保留舊模擬年度，會依新的可用年度調整。
 

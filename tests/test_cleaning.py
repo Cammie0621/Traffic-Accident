@@ -17,6 +17,22 @@ def row(order=1, age="25", sex="男", **changes):
 
 
 class CleaningTests(unittest.TestCase):
+    def test_unique_case_can_have_second_party_before_first(self):
+        acc,part,audit=build_tables(pd.DataFrame([row(2,"30"),row(1,"25")]),"unordered.csv",2025)
+        self.assertEqual((len(acc),len(part)),(1,2))
+        self.assertEqual(part.participant_order.tolist(),[2,1])
+        self.assertEqual(int(acc.source_record.iloc[0]),2)
+        self.assertTrue(part.participant_id.is_unique)
+        self.assertEqual(audit['source_rows_before_unique_rank_one'],1)
+
+    def test_missing_first_party_is_not_invented(self):
+        with self.assertRaisesRegex(ValueError,"starts without ordinal 1"):
+            build_tables(pd.DataFrame([row(2)]),"missing-first.csv",2025)
+
+    def test_ambiguous_repeated_key_prefix_is_rejected(self):
+        with self.assertRaisesRegex(ValueError,"starts without ordinal 1"):
+            build_tables(pd.DataFrame([row(2),row(1),row(1)]),"ambiguous.csv",2025)
+
     def test_2024_leap_day_and_midnight(self):
         record=row(1, **{"發生年度":"2024", "發生月份":"2", "發生日期":"20240229", "發生時間":"000000"})
         acc,part,_=build_tables(pd.DataFrame([record]),"2024/fixture.csv",2024)

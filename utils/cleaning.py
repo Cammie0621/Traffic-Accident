@@ -64,8 +64,8 @@ def _case_hash(values: tuple[str, ...]) -> str:
 def build_tables(source: pd.DataFrame, source_file: str, expected_year: int):
     """Build both levels from one complete source file in its original order.
 
-    A source ordinal reset splits otherwise identical location/time keys. This
-    is permitted only after the complete file passes shared-field checks.
+    A key with exactly one source ordinal 1 is independent of row ordering.
+    Repeated ordinal-1 keys use source resets only after shared-field checks.
     IDs are derived identifiers, never official case numbers.
     """
     frame = source.copy().reset_index(drop=True)
@@ -105,6 +105,10 @@ def build_tables(source: pd.DataFrame, source_file: str, expected_year: int):
         raise ValueError("Generated identifier hash collision")
     frame["_base"] = pd.Series(key_codes, index=frame.index)
     frame["_instance"] = rank.eq(1).groupby(frame["_base"]).cumsum().astype("int16")
+    starts_per_base = rank.eq(1).groupby(frame["_base"]).sum()
+    unique_case = frame["_base"].map(starts_per_base).eq(1)
+    unordered_unique_rows = int((unique_case & frame["_instance"].eq(0)).sum())
+    frame.loc[unique_case, "_instance"] = 1
     if frame["_instance"].eq(0).any():
         raise ValueError("A candidate case starts without ordinal 1; review before counting")
     frame["accident_id"] = [f"{expected_year}-{hashes[base]}-{instance}" for base, instance in zip(frame["_base"], frame["_instance"])]
@@ -169,4 +173,5 @@ def build_tables(source: pd.DataFrame, source_file: str, expected_year: int):
     participant_columns = ["participant_id", "accident_id", "participant_order", "vehicle_type", "vehicle_type_raw", "vehicle_subtype_raw", "age_raw", "age", "age_valid", "age_invalid_reason", "age_review_required", "is_person", "sex_raw", "action_type_raw", "action_detail_raw", "ordinal_repeated", "source_file", "source_record"]
     participants = frame[participant_columns].copy()
     audit = {"file": source_file, "selected_rows": len(frame), "accidents": len(accidents), "source_rank_one": int(rank.eq(1).sum()), "base_keys": len(unique_keys), "same_key_split_groups": len(split_bases), "ordinal_repeated_rows": int(repeated.sum()), "shared_conflicts": 0, "city_conflicts": int(frame["city_conflict"].sum()), "date_invalid_cases": int((~accidents["date_valid"]).sum()), "time_invalid_cases": int((~accidents["time_valid"]).sum()), "coordinate_invalid_cases": int((~accidents["coordinate_valid"]).sum()), "age_reasons": dict(Counter(participants["age_invalid_reason"])), "split_case_ids": accidents.loc[accidents["same_key_multiple_cases"], "accident_id"].tolist(), "ordinal_repeated_case_ids": participants.loc[repeated, "accident_id"].unique().tolist()}
+    audit["source_rows_before_unique_rank_one"] = unordered_unique_rows
     return accidents.reset_index(drop=True), participants.reset_index(drop=True), audit
