@@ -1,4 +1,6 @@
-streamlit
-pandas
-altair
-pyarrow
+# Tested with Python 3.11
+streamlit==1.51.0
+pandas==2.1.4
+altair==5.0.1
+pyarrow==17.0.0
+numpy==1.26.4

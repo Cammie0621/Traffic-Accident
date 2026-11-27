@@ -10,7 +10,7 @@ filtered_acc, filtered_part, info = render_sidebar_filters(
 )
 
 if is_sample:
-    st.caption("目前使用 2021–2025 開發用模擬小樣本。")
+    st.caption("目前使用開發小樣本，僅供操作測試；不代表全年資料。")
 
 st.write(
     f"目前條件：年度 {info['years']}｜"

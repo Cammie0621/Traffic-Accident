@@ -1,8 +1,10 @@
 from pathlib import Path
+import json
 import pandas as pd
 import streamlit as st
 
-DATA_DIR = Path("data/processed")
+ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ROOT / "data" / "processed"
 ACCIDENTS_PATH = DATA_DIR / "accidents.parquet"
 PARTICIPANTS_PATH = DATA_DIR / "participants.parquet"
 
@@ -55,13 +57,53 @@ def _make_sample_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     return accidents, participants
 
 
-@st.cache_data
-def load_data() -> tuple[pd.DataFrame, pd.DataFrame, bool]:
-    """讀取事故表與當事者表；第三個回傳值代表是否為模擬樣本。"""
-    if ACCIDENTS_PATH.exists() and PARTICIPANTS_PATH.exists():
-        accidents = pd.read_parquet(ACCIDENTS_PATH)
-        participants = pd.read_parquet(PARTICIPANTS_PATH)
-        return accidents, participants, False
+def _signature(paths):
+    return tuple((str(path), path.stat().st_mtime_ns, path.stat().st_size) for path in paths if path.exists())
 
-    accidents, participants = _make_sample_data()
-    return accidents, participants, True
+
+def _source_directory():
+    for directory, mode in [(DATA_DIR, "processed"), (ROOT / "data" / "samples", "sample")]:
+        paths = [directory / "accidents.parquet", directory / "participants.parquet"]
+        if any(path.exists() for path in paths):
+            if not all(path.exists() for path in paths):
+                raise ValueError(f"事故表與當事者表必須一起提供：{directory}")
+            return directory, mode
+    return None, "mock"
+
+
+@st.cache_data(max_entries=2, show_spinner="讀取整理後資料…")
+def _load_cached(directory: str, mode: str, signature: tuple):
+    folder = Path(directory)
+    accidents = pd.read_parquet(folder / "accidents.parquet")
+    participants = pd.read_parquet(folder / "participants.parquet")
+    required_acc = {"accident_id", "year", "city", "accident_type", "deaths", "injuries"}
+    required_part = {"accident_id", "vehicle_type", "age"}
+    if not required_acc.issubset(accidents) or not required_part.issubset(participants):
+        raise ValueError("資料缺少網站必要欄位，請依資料字典重新執行前處理。")
+    if not accidents["accident_id"].is_unique:
+        raise ValueError("事故表 ID 不唯一，已停止載入以避免重複計案。")
+    if not participants["accident_id"].isin(accidents["accident_id"]).all():
+        raise ValueError("當事者表含無法對應事故的紀錄。")
+    metadata_path = folder / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.exists() else {}
+    metadata["source_mode"] = mode
+    accidents.attrs["metadata"] = metadata
+    participants.attrs["metadata"] = metadata
+    return accidents, participants, mode != "processed"
+
+
+def load_data() -> tuple[pd.DataFrame, pd.DataFrame, bool]:
+    """Full processed tables, then a real development sample, then the old mock.
+
+    Cache keys include both file timestamps/sizes, so adding or rebuilding data
+    switches away from the previous sample without a manual cache clear.
+    """
+    directory, mode = _source_directory()
+    if directory is None:
+        accidents, participants = _make_sample_data()
+        metadata = {"source_mode":"mock", "is_sample":True, "years":sorted(accidents["year"].unique().tolist())}
+        accidents.attrs["metadata"] = metadata
+        participants.attrs["metadata"] = metadata
+        return accidents, participants, True
+    paths = [directory / name for name in ("accidents.parquet", "participants.parquet", "metadata.json")]
+    return _load_cached(str(directory), mode, _signature(paths))

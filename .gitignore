@@ -2,3 +2,5 @@
 __pycache__/
 .DS_Store
 data/raw/
+# Generated full tables; reproduce with scripts/preprocess.py
+data/processed/

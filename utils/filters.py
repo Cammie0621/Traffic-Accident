@@ -20,6 +20,15 @@ def _init_state(all_years: list[int]) -> None:
         st.session_state["global_cities"] = SIX_CITIES.copy()
     if "global_types" not in st.session_state:
         st.session_state["global_types"] = ACCIDENT_TYPES.copy()
+    available = tuple(all_years)
+    if st.session_state.get("_available_years") != available:
+        for key in ("global_years", "sb_years"):
+            if key in st.session_state:
+                previous = st.session_state[key]
+                selected = [year for year in previous if year in all_years]
+                st.session_state[key] = selected if selected or not previous else all_years.copy()
+        st.session_state["_available_years"] = available
+
 
 
 def _reset_filters(all_years: list[int]) -> None:
@@ -40,13 +49,11 @@ def render_sidebar_filters(
     all_years = sorted(accidents["year"].dropna().unique().tolist())
     _init_state(all_years)
 
-    # 切頁時將共用狀態同步回側邊欄元件
-    if "sb_years" not in st.session_state:
-        st.session_state["sb_years"] = st.session_state["global_years"]
-    if "sb_cities" not in st.session_state:
-        st.session_state["sb_cities"] = st.session_state["global_cities"]
-    if "sb_types" not in st.session_state:
-        st.session_state["sb_types"] = st.session_state["global_types"]
+    # 不同頁面的 widget 身分不同，需在建立元件前由共用狀態還原。
+    # 同頁操作會先透過 on_change 更新 global_*，因此不會覆蓋新選擇。
+    st.session_state["sb_years"] = st.session_state["global_years"].copy()
+    st.session_state["sb_cities"] = st.session_state["global_cities"].copy()
+    st.session_state["sb_types"] = st.session_state["global_types"].copy()
 
     with st.sidebar:
         st.header("共用篩選條件")
@@ -77,10 +84,11 @@ def render_sidebar_filters(
         )
 
         st.button(
-            "重設篩選",
+            "重設共用篩選",
             on_click=_reset_filters,
             args=(all_years,),
             use_container_width=True,
+            help="將年度、縣市與事故類別恢復全選；保留車種及各圖表的局部設定。",
         )
 
     # 1. 先篩選事故表

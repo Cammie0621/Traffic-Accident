@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from utils.chart_style import PRIMARY_COLOR
 from utils.filters import SIX_CITIES
+from utils.widget_state import restore_widget_state, save_widget_state
 
 
 def render(
@@ -22,6 +23,10 @@ def render(
     )
     st.subheader(title)
 
+    # 無資料時排序元件會暫時隱藏；另存狀態，恢復資料後仍沿用原本排序。
+    sort_key = f"{key_prefix}_sort"
+    restore_widget_state(sort_key, "依事故件數排序")
+
     # 無資料防呆
     if accidents.empty or not cities:
         st.warning("目前篩選條件下無符合資料，請調整左側篩選條件。")
@@ -32,13 +37,15 @@ def render(
         "城市排序方式",
         options=["依事故件數排序", "固定城市順序（北到南）"],
         horizontal=True,
-        key=f"{key_prefix}_sort",
+        key=sort_key,
+        on_change=save_widget_state,
+        args=(sort_key,),
     )
 
     # 使用副本彙整：依城市計算不重複事故件數
     df = accidents.copy()
     summary = (
-        df.groupby("city", as_index=False)["accident_id"]
+        df.groupby("city", as_index=False, observed=True)["accident_id"]
         .nunique()
         .rename(columns={"accident_id": "事故件數（件）"})
     )
