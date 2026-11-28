@@ -48,15 +48,17 @@ def render_causes(accidents, *, key_prefix):
         f"符合條件共 {total:,} 件｜圖中顯示 {len(shown)} 類、"
         f"合計 {shown['cases'].sum():,} 件｜未知／未填 {unknown:,} 件，列入排行。"
     )
-    chart = alt.Chart(shown).mark_bar(color=PRIMARY_COLOR).encode(
-        x=alt.X("cases:Q", title="事故件數（件）", axis=alt.Axis(format=",d")),
-        y=alt.Y("cause:N", title="警方研判主要肇因", sort=shown["cause"].tolist()),
-        tooltip=[
-            alt.Tooltip("cause:N", title="主要肇因"),
-            alt.Tooltip("cases:Q", title="事故件數", format=",d"),
-        ],
-    ).properties(height=max(110, 26 * len(shown)))
-    st.altair_chart(chart, width="stretch")
+    st.bar_chart(
+        shown,
+        x="cause",
+        y="cases",
+        x_label="事故件數（件）",
+        y_label="警方研判主要肇因",
+        color=PRIMARY_COLOR,
+        stack=False,
+        horizontal=True,
+        sort="-cases",
+    )
     first = shown.iloc[0]
     tied = ranking["cases"].eq(first["cases"]).sum()
     leader = f"並列首位的類別之一為「{first['cause']}」" if tied > 1 else f"件數最多的是「{first['cause']}」"
