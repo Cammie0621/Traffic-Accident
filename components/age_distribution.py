@@ -9,9 +9,7 @@ from utils.cleaning import AGE_REASONS
 from utils.widget_state import restore_widget_state, save_widget_state
 
 
-def summarize_ages(participants: pd.DataFrame, bin_width: int, exclude_review: bool = False):
-    if bin_width not in (5, 10):
-        raise ValueError("Age bin width must be 5 or 10")
+def select_valid_ages(participants: pd.DataFrame, exclude_review: bool = False):
     age = pd.to_numeric(participants["age"], errors="coerce")
     person = participants.get("is_person", pd.Series(True, index=participants.index)).fillna(False).astype(bool)
     valid = person & age.notna() & age.between(0, 120) & age.mod(1).eq(0)
@@ -21,8 +19,19 @@ def summarize_ages(participants: pd.DataFrame, bin_width: int, exclude_review: b
     selected = valid & (~review if exclude_review else True)
     values = age.loc[selected].astype(int)
     counts = {"records":len(participants), "person_records":int(person.sum()), "non_person_records":int((~person).sum()), "invalid_age_records":int((person & ~valid).sum()), "review_excluded":int((valid & ~selected).sum()), "valid_age_records":len(values)}
+    return values, counts
+
+
+def summarize_ages(participants: pd.DataFrame, bin_width: int, exclude_review: bool = False):
+    values, counts = select_valid_ages(participants, exclude_review)
+    return build_histogram(values, bin_width), counts
+
+
+def build_histogram(values: pd.Series, bin_width: int) -> pd.DataFrame:
+    if bin_width not in (5, 10):
+        raise ValueError("Age bin width must be 5 or 10")
     if values.empty:
-        return pd.DataFrame(columns=["age_start","age_end","age_range","count"]), counts
+        return pd.DataFrame(columns=["age_start","age_end","age_range","count"])
     starts = values // bin_width * bin_width
     bins = list(range(0, int(starts.max()) + bin_width, bin_width))
     hist = starts.value_counts().reindex(bins, fill_value=0).rename_axis("age_start").reset_index(name="count")
@@ -30,10 +39,10 @@ def summarize_ages(participants: pd.DataFrame, bin_width: int, exclude_review: b
     hist["age_range"] = hist.apply(lambda row: f"{int(row.age_start)}–{int(row.age_end)-1} 歲", axis=1)
     if int(hist["count"].sum()) != len(values):
         raise ValueError("Histogram total does not match selected valid-age records")
-    return hist, counts
+    return hist
 
 
-def render(accidents: pd.DataFrame, participants: pd.DataFrame, *, key_prefix: str = "age") -> None:
+def render(accidents: pd.DataFrame, participants: pd.DataFrame, *, key_prefix: str = "age") -> pd.Series:
     st.subheader("當事者年齡分布")
     width_key = f"{key_prefix}_bin_width"
     review_key = f"{key_prefix}_exclude_review"
@@ -53,7 +62,8 @@ def render(accidents: pd.DataFrame, participants: pd.DataFrame, *, key_prefix: s
             help="預設保留符合分析範圍的原始年齡。此選項用於比較待覆核值是否影響分布；0 歲不自動視為缺值。",
             on_change=save_widget_state, args=(review_key,),
         )
-    histogram, counts = summarize_ages(participants, width, exclude_review)
+    values, counts = select_valid_ages(participants, exclude_review)
+    histogram = build_histogram(values, width)
     first, second, third = st.columns(3)
     first.metric("可分析年齡", f"{counts['valid_age_records']:,} 人次")
     second.metric("人的紀錄未採用於年齡圖", f"{counts['invalid_age_records'] + counts['review_excluded']:,} 筆")
@@ -84,3 +94,5 @@ def render(accidents: pd.DataFrame, participants: pd.DataFrame, *, key_prefix: s
         if not histogram.empty:
             st.dataframe(histogram[["age_range","count"]].rename(columns={"age_range":"年齡區間","count":"當事者人次"}), hide_index=True, width="stretch")
     st.caption("年齡分布描述事故資料中的當事者紀錄；缺少各年齡人口與交通曝險量，不能由圖表判定某年齡層較容易肇事。")
+
+    return values
