@@ -1,5 +1,6 @@
 import streamlit as st
 from components.age_distribution import render as render_age
+from components.cause_and_age import render_causes, render_vehicle_ages
 from utils.data_loader import load_data
 from utils.filters import render_sidebar_filters
 
@@ -35,8 +36,8 @@ st.write(f"已選車種：{len(selected_vehicles)} 類｜涉及事故 {len(vehic
 st.caption("涉及事故採任一符合車種的當事者取得事故 ID，並以事故表計案；人的年齡分析另排除非人與無效年齡紀錄。")
 
 st.divider()
-st.info("此處預留給 F：主要肇因水平長條圖。")
+render_causes(vehicle_acc, key_prefix="participants_cause")
 st.divider()
-render_age(vehicle_acc, vehicle_part, key_prefix="participants_age")
+valid_ages = render_age(vehicle_acc, vehicle_part, key_prefix="participants_age")
 st.divider()
-st.info("此處預留給 F：車種年齡箱型圖。")
+render_vehicle_ages(vehicle_part, valid_ages)
